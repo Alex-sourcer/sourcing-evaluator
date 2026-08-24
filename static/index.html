@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sourcing Evaluator Agent</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-top">
+                <h1>Sourcing Evaluator</h1>
+                <div class="nav-tabs">
+                    <button class="tab-btn active" data-tab="evaluator">Evaluador</button>
+                    <button class="tab-btn" data-tab="search">Buscar Candidatos</button>
+                    <button class="tab-btn" data-tab="dashboard">Dashboard</button>
+                </div>
+            </div>
+            <p class="subtitle">Evaluación inteligente de candidatos con IA</p>
+        </header>
+
+        <div class="main-content">
+
+            <!-- ============ TAB 1: EVALUATOR ============ -->
+            <div id="evaluator-tab" class="tab-content active">
+                <div class="input-section">
+                    <div class="form-group">
+                        <label for="jobDescription">Job Description</label>
+                        <textarea id="jobDescription" placeholder="Pega aquí la descripción del puesto..." rows="6"></textarea>
+                    </div>
+
+                    <div class="candidates-section">
+                        <div class="section-header">
+                            <h2>Candidatos a Evaluar</h2>
+                            <button id="addCandidateBtn" class="btn-secondary">+ Agregar Candidato</button>
+                        </div>
+
+                        <div id="candidatesList" class="candidates-list">
+                            <div class="candidate-input" data-index="0">
+                                <div class="candidate-row">
+                                    <input type="text" class="candidate-name" placeholder="Nombre del candidato">
+                                    <input type="text" class="candidate-profile" placeholder="Perfil (experiencia, skills)">
+                                    <input type="text" class="candidate-linkedin" placeholder="LinkedIn (opcional)">
+                                    <button type="button" class="btn-remove" title="Eliminar">×</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button id="evaluateBtn" class="btn-primary">Evaluar Candidatos</button>
+                        <button id="clearBtn" class="btn-tertiary">Limpiar</button>
+                    </div>
+
+                    <div id="loadingIndicator" class="loading hidden">
+                        <div class="spinner"></div>
+                        <p>Evaluando candidatos con IA...</p>
+                    </div>
+
+                    <div id="errorMessage" class="error-message hidden"></div>
+                </div>
+
+                <div id="resultsSection" class="results-section hidden">
+                    <div class="results-header">
+                        <h2>Resultados de la Evaluación</h2>
+                        <div class="results-actions">
+                            <button id="exportCsvBtn" class="btn-secondary">📥 CSV</button>
+                            <button id="exportSheetsBtn" class="btn-secondary">📊 Sheets</button>
+                            <button id="shareBtn" class="btn-secondary">🔗 Compartir</button>
+                            <button id="newEvalBtn" class="btn-tertiary">Nueva Evaluación</button>
+                        </div>
+                    </div>
+
+                    <div id="resultsList" class="results-list">
+                        <!-- Results will be inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ TAB 2: SEARCH CANDIDATES ============ -->
+            <div id="search-tab" class="tab-content">
+                <div class="search-section">
+                    <div class="form-group">
+                        <label for="searchJobDescription">Job Description</label>
+                        <textarea id="searchJobDescription" placeholder="Pega la descripción del puesto para generar queries de búsqueda..." rows="6"></textarea>
+                    </div>
+
+                    <div id="searchLoadingIndicator" class="loading hidden">
+                        <div class="spinner"></div>
+                        <p>Generando queries de búsqueda con IA...</p>
+                    </div>
+
+                    <div id="searchErrorMessage" class="error-message hidden"></div>
+
+                    <div class="action-buttons">
+                        <button id="generateSearchBtn" class="btn-primary">Generar Queries de Búsqueda</button>
+                        <button id="clearSearchBtn" class="btn-tertiary">Limpiar</button>
+                    </div>
+
+                    <div id="searchResultsSection" class="search-results hidden">
+                        <div class="search-results-header">
+                            <h2>LinkedIn Search Queries</h2>
+                        </div>
+
+                        <div id="idealProfile" class="ideal-profile-card"></div>
+
+                        <div class="search-queries-container">
+                            <h3>Search Queries</h3>
+                            <div id="searchQueriesList" class="search-queries-list">
+                                <!-- Queries will be inserted here -->
+                            </div>
+                        </div>
+
+                        <div class="search-tips-container">
+                            <h3>Tips para la búsqueda</h3>
+                            <ul id="searchTipsList" class="search-tips-list">
+                                <!-- Tips will be inserted here -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ TAB 3: DASHBOARD ============ -->
+            <div id="dashboard-tab" class="tab-content">
+                <div class="dashboard-container">
+                    <div id="dashboardLoading" class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando analytics...</p>
+                    </div>
+
+                    <div id="dashboardContent" class="dashboard-content hidden">
+                        <!-- KPI Cards -->
+                        <div class="kpi-grid">
+                            <div class="kpi-card">
+                                <div class="kpi-value" id="totalEvals">0</div>
+                                <div class="kpi-label">Evaluaciones Totales</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-value" id="avgScore">0%</div>
+                                <div class="kpi-label">Match Score Promedio</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-value" id="topUser">-</div>
+                                <div class="kpi-label">Usuario Más Activo</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-value" id="strongYes">0</div>
+                                <div class="kpi-label">Strong Yes Recommendations</div>
+                            </div>
+                        </div>
+
+                        <!-- Charts Row -->
+                        <div class="charts-grid">
+                            <div class="chart-card">
+                                <h3>Recomendaciones (últimas 100)</h3>
+                                <div id="recommendationChart" class="chart"></div>
+                            </div>
+
+                            <div class="chart-card">
+                                <h3>Top Usuarios</h3>
+                                <div id="userChart" class="chart"></div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="activity-card">
+                            <h3>Evaluaciones por Día (últimos 30 días)</h3>
+                            <div id="activityChart" class="activity-chart"></div>
+                        </div>
+
+                        <!-- Department Stats -->
+                        <div class="dept-card">
+                            <h3>Evaluaciones por Departamento</h3>
+                            <div id="deptList" class="dept-list"></div>
+                        </div>
+
+                        <!-- Conversion Prediction -->
+                        <div class="conversion-card">
+                            <h3>Predicción de Conversión (Hiring Rate)</h3>
+                            <div id="conversionStats"></div>
+                            <div id="conversionBands"></div>
+                            <div class="conversion-insights">
+                                <p id="conversionInsight" style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 16px;"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Share Modal -->
+        <div id="shareModal" class="modal hidden">
+            <div class="modal-content">
+                <button class="modal-close">&times;</button>
+                <h3>Compartir Evaluación</h3>
+                <p>Copia este link para compartir con tu equipo:</p>
+                <div class="share-link-container">
+                    <input type="text" id="shareLink" readonly class="share-link">
+                    <button id="copyLinkBtn" class="btn-secondary">Copiar</button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Powered by Gemini API • Sourcing Evaluator Agent</p>
+        </footer>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

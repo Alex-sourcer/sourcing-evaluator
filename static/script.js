@@ -1,0 +1,762 @@
+// DOM Elements - Evaluator Tab
+const jobDescriptionEl = document.getElementById('jobDescription');
+const candidatesListEl = document.getElementById('candidatesList');
+const addCandidateBtnEl = document.getElementById('addCandidateBtn');
+const evaluateBtnEl = document.getElementById('evaluateBtn');
+const clearBtnEl = document.getElementById('clearBtn');
+const loadingEl = document.getElementById('loadingIndicator');
+const errorMessageEl = document.getElementById('errorMessage');
+const resultsSection = document.getElementById('resultsSection');
+const resultsListEl = document.getElementById('resultsList');
+const exportCsvBtnEl = document.getElementById('exportCsvBtn');
+const shareBtnEl = document.getElementById('shareBtn');
+const newEvalBtnEl = document.getElementById('newEvalBtn');
+const shareModalEl = document.getElementById('shareModal');
+const shareLinkEl = document.getElementById('shareLink');
+const copyLinkBtnEl = document.getElementById('copyLinkBtn');
+const modalCloseEl = document.querySelector('.modal-close');
+
+// DOM Elements - Search Tab
+const searchJobDescEl = document.getElementById('searchJobDescription');
+const generateSearchBtnEl = document.getElementById('generateSearchBtn');
+const clearSearchBtnEl = document.getElementById('clearSearchBtn');
+const searchLoadingEl = document.getElementById('searchLoadingIndicator');
+const searchErrorEl = document.getElementById('searchErrorMessage');
+const searchResultsEl = document.getElementById('searchResultsSection');
+const searchQueriesListEl = document.getElementById('searchQueriesList');
+const searchTipsListEl = document.getElementById('searchTipsList');
+const idealProfileEl = document.getElementById('idealProfile');
+
+// DOM Elements - Dashboard
+const dashboardLoadingEl = document.getElementById('dashboardLoading');
+const dashboardContentEl = document.getElementById('dashboardContent');
+const totalEvalsEl = document.getElementById('totalEvals');
+const avgScoreEl = document.getElementById('avgScore');
+const topUserEl = document.getElementById('topUser');
+const strongYesEl = document.getElementById('strongYes');
+const recommendationChartEl = document.getElementById('recommendationChart');
+const userChartEl = document.getElementById('userChart');
+const activityChartEl = document.getElementById('activityChart');
+const deptListEl = document.getElementById('deptList');
+
+// State
+let currentEvaluationId = null;
+let currentShareToken = null;
+let currentResults = null;
+let candidateCount = 1;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    setupTabNavigation();
+    checkIfSharedEvaluation();
+    setupEventListeners();
+    loadDashboard();
+});
+
+function setupTabNavigation() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabName = btn.dataset.tab;
+            switchTab(tabName);
+        });
+    });
+}
+
+function switchTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // Remove active from all buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Show selected tab
+    const tabEl = document.getElementById(`${tabName}-tab`);
+    if (tabEl) {
+        tabEl.classList.add('active');
+    }
+
+    // Mark button as active
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+    // Load dashboard if switching to dashboard
+    if (tabName === 'dashboard') {
+        loadDashboard();
+    }
+}
+
+function setupEventListeners() {
+    // Evaluator tab
+    addCandidateBtnEl.addEventListener('click', addCandidate);
+    evaluateBtnEl.addEventListener('click', evaluateCandidates);
+    clearBtnEl.addEventListener('click', clearForm);
+    exportCsvBtnEl.addEventListener('click', exportToCSV);
+    shareBtnEl.addEventListener('click', openShareModal);
+    newEvalBtnEl.addEventListener('click', newEvaluation);
+    copyLinkBtnEl.addEventListener('click', copyShareLink);
+    modalCloseEl.addEventListener('click', closeShareModal);
+    shareModalEl.addEventListener('click', (e) => {
+        if (e.target === shareModalEl) closeShareModal();
+    });
+
+    candidatesListEl.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-remove')) {
+            e.target.closest('.candidate-input').remove();
+        }
+    });
+
+    // Search tab
+    generateSearchBtnEl.addEventListener('click', generateSearchQueries);
+    clearSearchBtnEl.addEventListener('click', clearSearchForm);
+
+    // Export to Google Sheets
+    const exportSheetsBtn = document.getElementById('exportSheetsBtn');
+    if (exportSheetsBtn) {
+        exportSheetsBtn.addEventListener('click', exportToGoogleSheets);
+    }
+}
+
+function addCandidate() {
+    const index = candidateCount++;
+    const candidateDiv = document.createElement('div');
+    candidateDiv.className = 'candidate-input';
+    candidateDiv.dataset.index = index;
+    candidateDiv.innerHTML = `
+        <div class="candidate-row">
+            <input type="text" class="candidate-name" placeholder="Nombre del candidato">
+            <input type="text" class="candidate-profile" placeholder="Perfil (experiencia, skills)">
+            <input type="text" class="candidate-linkedin" placeholder="LinkedIn (opcional)">
+            <button type="button" class="btn-remove" title="Eliminar">×</button>
+        </div>
+    `;
+    candidatesListEl.appendChild(candidateDiv);
+}
+
+function getCandidates() {
+    const candidates = [];
+    document.querySelectorAll('.candidate-input').forEach((div) => {
+        const name = div.querySelector('.candidate-name').value.trim();
+        const profile = div.querySelector('.candidate-profile').value.trim();
+        const linkedin = div.querySelector('.candidate-linkedin').value.trim();
+
+        if (name && profile) {
+            candidates.push({ name, profile, linkedin });
+        }
+    });
+    return candidates;
+}
+
+function showError(message) {
+    errorMessageEl.textContent = message;
+    errorMessageEl.classList.remove('hidden');
+    setTimeout(() => {
+        errorMessageEl.classList.add('hidden');
+    }, 5000);
+}
+
+async function evaluateCandidates() {
+    const jobDescription = jobDescriptionEl.value.trim();
+    const candidates = getCandidates();
+
+    if (!jobDescription) {
+        showError('Por favor, ingresa una descripción del puesto');
+        return;
+    }
+
+    if (candidates.length === 0) {
+        showError('Por favor, agrega al menos un candidato');
+        return;
+    }
+
+    loadingEl.classList.remove('hidden');
+    evaluateBtnEl.disabled = true;
+
+    try {
+        const response = await fetch('/api/evaluate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                job_description: jobDescription,
+                candidates: candidates
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error en la evaluación');
+        }
+
+        const data = await response.json();
+        currentEvaluationId = data.evaluation_id;
+        currentShareToken = data.share_token;
+        currentResults = data.results;
+
+        displayResults(data.results);
+        resultsSection.classList.remove('hidden');
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        loadingEl.classList.add('hidden');
+        evaluateBtnEl.disabled = false;
+    }
+}
+
+function displayResults(results) {
+    resultsListEl.innerHTML = '';
+
+    results.forEach((result) => {
+        const card = createResultCard(result);
+        resultsListEl.appendChild(card);
+    });
+}
+
+function createResultCard(result) {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+
+    const matchScore = parseInt(result.match_score);
+    let scoreClass = 'low';
+    if (matchScore >= 70) scoreClass = 'high';
+    else if (matchScore >= 50) scoreClass = 'medium';
+
+    const recommendationClass = result.recommendation.toLowerCase().replace(' ', '-');
+
+    card.innerHTML = `
+        <div class="card-header">
+            <div class="candidate-name-card">${escapeHtml(result.candidate_name)}</div>
+            <div class="score-badge ${scoreClass}">${matchScore}%</div>
+        </div>
+
+        <div class="card-field">
+            <div class="card-field-label">Technical Fit</div>
+            <div class="card-field-value">${escapeHtml(result.technical_fit)}</div>
+        </div>
+
+        <div class="card-field">
+            <div class="card-field-label">Strengths</div>
+            <ul class="field-list">
+                ${result.strengths.map(s => `<li>${escapeHtml(s)}</li>`).join('')}
+            </ul>
+        </div>
+
+        ${result.red_flags && result.red_flags.length > 0 ? `
+        <div class="card-field">
+            <div class="card-field-label">Red Flags</div>
+            <ul class="field-list">
+                ${result.red_flags.map(r => `<li>${escapeHtml(r)}</li>`).join('')}
+            </ul>
+        </div>
+        ` : ''}
+
+        <div class="card-field">
+            <div class="card-field-label">Interview Questions</div>
+            <ul class="field-list">
+                ${result.questions.map(q => `<li>${escapeHtml(q)}</li>`).join('')}
+            </ul>
+        </div>
+
+        <div class="card-field">
+            <div class="card-field-label">Recommendation</div>
+            <div class="recommendation ${recommendationClass}">${escapeHtml(result.recommendation)}</div>
+        </div>
+
+        <div class="card-field">
+            <div class="card-field-label">Reasoning</div>
+            <div class="card-field-value">${escapeHtml(result.reasoning)}</div>
+        </div>
+    `;
+
+    return card;
+}
+
+function exportToCSV() {
+    if (!currentResults) return;
+
+    const headers = ['Candidato', 'Match Score', 'Technical Fit', 'Strengths', 'Red Flags', 'Interview Questions', 'Recommendation', 'Reasoning'];
+    const rows = currentResults.map(result => [
+        result.candidate_name,
+        result.match_score,
+        result.technical_fit,
+        result.strengths.join('; '),
+        result.red_flags ? result.red_flags.join('; ') : '',
+        result.questions.join('; '),
+        result.recommendation,
+        result.reasoning
+    ]);
+
+    let csv = headers.join(',') + '\n';
+    rows.forEach(row => {
+        csv += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',') + '\n';
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `evaluacion-candidatos-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function openShareModal() {
+    if (!currentShareToken) return;
+
+    const shareUrl = `${window.location.origin}?share=${currentShareToken}`;
+    shareLinkEl.value = shareUrl;
+    shareModalEl.classList.remove('hidden');
+}
+
+function closeShareModal() {
+    shareModalEl.classList.add('hidden');
+}
+
+function copyShareLink() {
+    shareLinkEl.select();
+    document.execCommand('copy');
+    copyLinkBtnEl.textContent = '✓ Copiado';
+    setTimeout(() => {
+        copyLinkBtnEl.textContent = 'Copiar';
+    }, 2000);
+}
+
+function newEvaluation() {
+    clearForm();
+    resultsSection.classList.add('hidden');
+    currentEvaluationId = null;
+    currentShareToken = null;
+    currentResults = null;
+}
+
+function clearForm() {
+    jobDescriptionEl.value = '';
+    candidatesListEl.innerHTML = '';
+    candidateCount = 1;
+    addCandidate();
+    errorMessageEl.classList.add('hidden');
+}
+
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// Search Candidates Functions
+async function generateSearchQueries() {
+    const jobDesc = searchJobDescEl.value.trim();
+
+    if (!jobDesc) {
+        showSearchError('Por favor, ingresa una descripción del puesto');
+        return;
+    }
+
+    searchLoadingEl.classList.remove('hidden');
+    generateSearchBtnEl.disabled = true;
+
+    try {
+        const response = await fetch('/api/search-candidates', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                job_description: jobDesc,
+                candidates: []
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error generating search queries');
+        }
+
+        const data = await response.json();
+        displaySearchResults(data.data);
+        searchResultsEl.classList.remove('hidden');
+    } catch (error) {
+        showSearchError(error.message);
+    } finally {
+        searchLoadingEl.classList.add('hidden');
+        generateSearchBtnEl.disabled = false;
+    }
+}
+
+function displaySearchResults(data) {
+    // Ideal profile
+    if (data.ideal_profile) {
+        idealProfileEl.innerHTML = `<p><strong>Candidato Ideal:</strong> ${escapeHtml(data.ideal_profile)}</p>`;
+    }
+
+    // Search queries
+    searchQueriesListEl.innerHTML = '';
+    if (data.search_queries) {
+        data.search_queries.forEach((q, idx) => {
+            const div = document.createElement('div');
+            div.className = 'search-query-item';
+            div.innerHTML = `
+                <div class="query-text">${escapeHtml(q.query)}</div>
+                <div class="query-desc">${escapeHtml(q.description)}</div>
+            `;
+            div.addEventListener('click', () => {
+                navigator.clipboard.writeText(q.query);
+                const originalText = div.querySelector('.query-text').textContent;
+                div.querySelector('.query-text').textContent = '✓ Copiado';
+                setTimeout(() => {
+                    div.querySelector('.query-text').textContent = originalText;
+                }, 1500);
+            });
+            searchQueriesListEl.appendChild(div);
+        });
+    }
+
+    // Tips
+    searchTipsListEl.innerHTML = '';
+    if (data.search_tips) {
+        data.search_tips.forEach(tip => {
+            const li = document.createElement('li');
+            li.textContent = tip;
+            searchTipsListEl.appendChild(li);
+        });
+    }
+}
+
+function clearSearchForm() {
+    searchJobDescEl.value = '';
+    searchResultsEl.classList.add('hidden');
+    searchErrorEl.classList.add('hidden');
+}
+
+function showSearchError(message) {
+    searchErrorEl.textContent = message;
+    searchErrorEl.classList.remove('hidden');
+    setTimeout(() => {
+        searchErrorEl.classList.add('hidden');
+    }, 5000);
+}
+
+// Dashboard Functions
+async function loadDashboard() {
+    dashboardLoadingEl.classList.remove('hidden');
+    dashboardContentEl.classList.add('hidden');
+
+    try {
+        const response = await fetch('/api/dashboard/stats');
+        if (!response.ok) throw new Error('Failed to load dashboard');
+
+        const stats = await response.json();
+        renderDashboard(stats);
+
+        // Also load conversion analytics
+        await loadConversionAnalytics();
+    } catch (error) {
+        console.error('Dashboard error:', error);
+    } finally {
+        dashboardLoadingEl.classList.add('hidden');
+    }
+}
+
+function renderDashboard(stats) {
+    // KPI Cards
+    totalEvalsEl.textContent = stats.total_evaluations;
+    avgScoreEl.textContent = stats.avg_match_score + '%';
+
+    if (stats.evaluations_by_user.length > 0) {
+        topUserEl.textContent = stats.evaluations_by_user[0].email.split('@')[0];
+    }
+
+    const strongYesCount = stats.recommendation_distribution['STRONG YES'] || 0;
+    strongYesEl.textContent = strongYesCount;
+
+    // Recommendation distribution chart
+    renderRecommendationChart(stats.recommendation_distribution);
+
+    // User chart
+    renderUserChart(stats.evaluations_by_user);
+
+    // Activity chart
+    renderActivityChart(stats.evaluations_by_date);
+
+    // Department chart
+    renderDeptChart(stats.evaluations_by_department);
+
+    dashboardContentEl.classList.remove('hidden');
+}
+
+function renderRecommendationChart(distribution) {
+    const colors = {
+        'STRONG YES': '#00BA63',
+        'YES': '#00D46F',
+        'MAYBE': '#FFB81C',
+        'NO': '#E01E37'
+    };
+
+    recommendationChartEl.innerHTML = '';
+
+    Object.entries(distribution).forEach(([rec, count]) => {
+        const div = document.createElement('div');
+        div.style.marginBottom = '12px';
+        const color = colors[rec] || '#999';
+        const percentage = count > 0 ? count : 0;
+
+        div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="font-weight: 600; color: var(--text);">${escapeHtml(rec)}</span>
+                <span style="color: var(--text-secondary);">${count}</span>
+            </div>
+            <div style="height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;">
+                <div style="height: 100%; background: ${color}; width: ${Math.min(percentage * 5, 100)}%;"></div>
+            </div>
+        `;
+        recommendationChartEl.appendChild(div);
+    });
+}
+
+function renderUserChart(users) {
+    userChartEl.innerHTML = '';
+    users.slice(0, 5).forEach(user => {
+        const div = document.createElement('div');
+        div.style.marginBottom = '12px';
+        div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="font-weight: 600; color: var(--text);">${escapeHtml(user.email.split('@')[0])}</span>
+                <span style="color: var(--text-secondary);">${user.count}</span>
+            </div>
+            <div style="height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;">
+                <div style="height: 100%; background: var(--primary); width: ${Math.min(user.count * 10, 100)}%;"></div>
+            </div>
+        `;
+        userChartEl.appendChild(div);
+    });
+}
+
+function renderActivityChart(dates) {
+    activityChartEl.innerHTML = '';
+    dates.slice(0, 30).forEach(item => {
+        const bar = document.createElement('div');
+        bar.className = 'activity-bar';
+        const maxCount = Math.max(...dates.map(d => d.count), 1);
+        const height = (item.count / maxCount) * 100;
+        bar.style.backgroundColor = `rgba(0, 82, 163, ${0.2 + (item.count / maxCount) * 0.8})`;
+        bar.title = `${item.date}: ${item.count} evaluations`;
+        activityChartEl.appendChild(bar);
+    });
+}
+
+function renderDeptChart(departments) {
+    deptListEl.innerHTML = '';
+    if (departments.length === 0) {
+        deptListEl.innerHTML = '<p style="color: var(--text-secondary);">No hay datos por departamento</p>';
+        return;
+    }
+
+    departments.forEach(dept => {
+        const div = document.createElement('div');
+        div.className = 'dept-item';
+        div.innerHTML = `
+            <span class="dept-name">${escapeHtml(dept.department)}</span>
+            <span class="dept-count">${dept.count}</span>
+        `;
+        deptListEl.appendChild(div);
+    });
+}
+
+// Conversion Analytics
+async function loadConversionAnalytics() {
+    try {
+        const response = await fetch('/api/conversion-analytics');
+        if (!response.ok) throw new Error('Failed to load conversion analytics');
+
+        const data = await response.json();
+        renderConversionAnalytics(data);
+    } catch (error) {
+        console.error('Conversion analytics error:', error);
+    }
+}
+
+function renderConversionAnalytics(data) {
+    const conversionStatsEl = document.getElementById('conversionStats');
+    const conversionBandsEl = document.getElementById('conversionBands');
+    const conversionInsightEl = document.getElementById('conversionInsight');
+
+    // Stats
+    conversionStatsEl.innerHTML = `
+        <div class="conversion-stat">
+            <div class="value">${data.overall_conversion_rate}%</div>
+            <div class="label">Conversion Rate</div>
+        </div>
+        <div class="conversion-stat">
+            <div class="value">${data.total_hired}</div>
+            <div class="label">Contratados</div>
+        </div>
+        <div class="conversion-stat">
+            <div class="value">${data.total_evaluated}</div>
+            <div class="label">Evaluados</div>
+        </div>
+    `;
+
+    // Bands
+    conversionBandsEl.innerHTML = '';
+    Object.entries(data.conversion_by_score_band).forEach(([band, stats]) => {
+        const bandDiv = document.createElement('div');
+        bandDiv.className = 'conversion-band';
+        const percentage = stats.conversion_rate || 0;
+        bandDiv.innerHTML = `
+            <div class="band-header">
+                <span class="band-name">${escapeHtml(band)}</span>
+                <span class="band-rate">${stats.conversion_rate}%</span>
+            </div>
+            <div class="band-bar">
+                <div class="band-fill" style="width: ${percentage}%"></div>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px;">
+                ${stats.hired} / ${stats.total} contratados
+            </div>
+        `;
+        conversionBandsEl.appendChild(bandDiv);
+    });
+
+    // Insight
+    const strongestBand = Object.entries(data.conversion_by_score_band)
+        .sort((a, b) => b[1].conversion_rate - a[1].conversion_rate)[0];
+
+    if (strongestBand) {
+        const [band, stats] = strongestBand;
+        conversionInsightEl.innerHTML = `
+            <strong>💡 Insight:</strong> Los candidatos con score ${band} tienen ${stats.conversion_rate}%
+            de probabilidad de ser contratados.
+            ${stats.conversion_rate > data.overall_conversion_rate
+                ? `Esto es ${(stats.conversion_rate - data.overall_conversion_rate).toFixed(1)}% mejor que el promedio.`
+                : 'Debajo del promedio.'}
+        `;
+    }
+}
+
+// Google Sheets Export
+async function exportToGoogleSheets() {
+    const btn = document.getElementById('exportSheetsBtn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Exportando...';
+
+    try {
+        const response = await fetch('/api/export-google-sheets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) throw new Error('Export failed');
+
+        const data = await response.json();
+
+        // Generate CSV from data
+        const csv = generateCsvFromData(data.records);
+        downloadCsv(csv, `sourcing-evaluator-${new Date().toISOString().split('T')[0]}.csv`);
+
+        btn.textContent = '✓ Exportado';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }, 2000);
+
+    } catch (error) {
+        console.error('Export error:', error);
+        btn.textContent = '❌ Error';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }, 2000);
+    }
+}
+
+function generateCsvFromData(records) {
+    if (records.length === 0) return '';
+
+    const headers = Object.keys(records[0]);
+    const csv = [headers.join(',')];
+
+    records.forEach(record => {
+        const row = headers.map(header => {
+            const value = record[header] || '';
+            const escaped = String(value).replace(/"/g, '""');
+            return `"${escaped}"`;
+        });
+        csv.push(row.join(','));
+    });
+
+    return csv.join('\n');
+}
+
+function downloadCsv(csv, filename) {
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+async function checkIfSharedEvaluation() {
+    const params = new URLSearchParams(window.location.search);
+    const shareToken = params.get('share');
+
+    if (shareToken) {
+        loadingEl.classList.remove('hidden');
+        try {
+            const response = await fetch(`/api/share/${shareToken}`);
+            if (!response.ok) throw new Error('Evaluación no encontrada');
+
+            const data = await response.json();
+            jobDescriptionEl.value = data.job_description;
+            jobDescriptionEl.disabled = true;
+
+            // Load candidates
+            candidatesListEl.innerHTML = '';
+            candidateCount = 0;
+            data.candidates.forEach(c => {
+                const index = candidateCount++;
+                const div = document.createElement('div');
+                div.className = 'candidate-input';
+                div.dataset.index = index;
+                div.innerHTML = `
+                    <div class="candidate-row">
+                        <input type="text" class="candidate-name" value="${escapeHtml(c.name)}" disabled>
+                        <input type="text" class="candidate-profile" value="${escapeHtml(c.profile)}" disabled>
+                        <input type="text" class="candidate-linkedin" value="${escapeHtml(c.linkedin)}" disabled>
+                    </div>
+                `;
+                candidatesListEl.appendChild(div);
+            });
+
+            // Disable input section
+            document.querySelectorAll('textarea, input[type="text"], button').forEach(el => {
+                if (!el.matches('.modal-close, #newEvalBtn, #exportCsvBtn, #copyLinkBtn')) {
+                    el.disabled = true;
+                }
+            });
+            addCandidateBtnEl.disabled = true;
+            evaluateBtnEl.disabled = true;
+            clearBtnEl.disabled = true;
+
+            currentResults = data.results;
+            displayResults(data.results);
+            resultsSection.classList.remove('hidden');
+
+        } catch (error) {
+            showError('No se pudo cargar la evaluación: ' + error.message);
+        } finally {
+            loadingEl.classList.add('hidden');
+        }
+    } else {
+        addCandidate();
+    }
+}
