@@ -150,7 +150,7 @@ Return JSON with: match_score (0-100), technical_fit, strengths (list), red_flag
 Return ONLY JSON, no other text."""
 
     response = client.chat.completions.create(
-        model="gemma-2-9b-it",
+        model="llama-3-70b-8192",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.7,
         max_tokens=1000
@@ -354,7 +354,7 @@ Return ONLY valid JSON, no additional text.
 
     try:
         response = client.chat.completions.create(
-            model="gemma-2-9b-it",
+            model="llama-3-70b-8192",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
             max_tokens=1000
@@ -399,7 +399,7 @@ CV: {text_content}
 Return ONLY JSON."""
 
         response = client.chat.completions.create(
-            model="gemma-2-9b-it",
+            model="llama-3-70b-8192",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
             max_tokens=500
