@@ -385,60 +385,44 @@ Return ONLY valid JSON, no additional text.
 
 @app.post("/api/extract-cv")
 async def extract_cv(file: UploadFile = File(...)):
-    """Extract candidate info from CV/resume text file"""
+    """Extract candidate info from CV text file"""
     try:
-        # Read file content
         contents = await file.read()
-
-        # Try to decode as UTF-8 text
-        try:
-            text_content = contents.decode('utf-8', errors='ignore')
-        except:
-            raise ValueError("File must be text-based (TXT, PDF as text, etc)")
+        text_content = contents.decode('utf-8', errors='ignore')
 
         if not text_content.strip() or len(text_content) < 20:
-            raise ValueError("File appears empty or too short")
+            raise HTTPException(status_code=400, detail="File too short or empty")
 
-        # Limit text to avoid API limits
-        text_content = text_content[:3000]
+        text_content = text_content[:2500]
 
-        prompt = f"""Extract candidate information from this resume/CV text.
-Return a JSON object with exactly these fields:
-{{
-    "candidate_name": "Full name if found, otherwise empty string",
-    "profile": "2-3 sentences: years of experience, key skills, tech stack, major achievements, seniority level"
-}}
+        prompt = f"""Extract from this CV text only:
+{{"candidate_name": "name or empty", "profile": "summary of experience in 2-3 sentences"}}
 
-CV TEXT:
-{text_content}
+CV: {text_content}
 
-Return ONLY valid JSON, no other text."""
+Return ONLY JSON."""
 
         model = genai.GenerativeModel("gemini-3.6-flash")
         response = model.generate_content(prompt)
 
-        # Parse response
-        response_text = response.text.strip()
-        if response_text.startswith("```"):
-            response_text = response_text.split("```")[1]
-            if response_text.startswith("json"):
-                response_text = response_text[4:]
-        response_text = response_text.strip()
+        text = response.text.strip()
+        if "```" in text:
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+            text = text.strip()
 
-        result = json.loads(response_text)
-
+        result = json.loads(text)
         return {
             "success": True,
             "candidate_name": result.get("candidate_name", "").strip(),
             "profile": result.get("profile", "").strip()
         }
 
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=400, detail=f"Failed to parse AI response: {str(e)}")
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid response format")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/candidate-outcome")
 async def record_candidate_outcome(
