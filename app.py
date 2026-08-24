@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -11,7 +11,6 @@ import google.generativeai as genai
 from functools import lru_cache
 import sqlite3
 from mambu_framework import get_mambu_framework_prompt, MAMBU_LEVELS
-import mimetypes
 
 app = FastAPI()
 
@@ -383,46 +382,6 @@ Return ONLY valid JSON, no additional text.
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/extract-cv")
-async def extract_cv(file: UploadFile = File(...)):
-    """Extract candidate info from CV (TXT, PDF as text)"""
-    try:
-        # Read file
-        contents = await file.read()
-
-        # Try to decode as text
-        try:
-            text_content = contents.decode('utf-8', errors='ignore')
-        except:
-            raise ValueError("Unable to read file as text")
-
-        if not text_content.strip():
-            raise ValueError("File is empty")
-
-        prompt = f"""Extract candidate information from this CV/resume text. Return ONLY a JSON object with these fields:
-{{
-    "candidate_name": "full name if found, or empty string",
-    "profile_summary": "2-3 sentences summarizing: years of experience, key skills, tech stack, major achievements"
-}}
-
-CV TEXT:
-{text_content[:2000]}
-
-Return ONLY valid JSON, no additional text."""
-
-        model = genai.GenerativeModel("gemini-3.6-flash")
-        response = model.generate_content(prompt)
-        result = json.loads(response.text.strip())
-
-        return {
-            "success": True,
-            "candidate_name": result.get("candidate_name", ""),
-            "profile": result.get("profile_summary", "")
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 @app.post("/api/candidate-outcome")
 async def record_candidate_outcome(
