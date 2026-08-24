@@ -153,14 +153,26 @@ function addCandidate() {
 
 function getCandidates() {
     const candidates = [];
+    let missingNames = false;
+
     document.querySelectorAll('.candidate-input').forEach((div) => {
         const name = div.querySelector('.candidate-name').value.trim();
         const profile = div.querySelector('.candidate-profile').value.trim();
+
+        if (profile && !name) {
+            missingNames = true;
+        }
 
         if (name && profile) {
             candidates.push({ name, profile, linkedin: "" });
         }
     });
+
+    if (missingNames) {
+        showError('Candidate name is required for all entries');
+        return [];
+    }
+
     return candidates;
 }
 
@@ -198,10 +210,41 @@ async function handleCVFileUpload(e) {
         profileField.value = data.profile;
 
         loadingEl.classList.add('hidden');
+
+        // Show success message with candidate name
+        const candidateName = data.candidate_name || file.name.replace(/\.[^/.]+$/, '');
+        showSuccessMessage(`✓ CV loaded: ${candidateName}`);
+
+        // Reset file input
+        e.target.value = '';
     } catch (error) {
         loadingEl.classList.add('hidden');
         showError('Error processing CV: ' + error.message);
     }
+}
+
+function showSuccessMessage(message) {
+    const div = document.createElement('div');
+    div.className = 'success-toast';
+    div.textContent = message;
+    div.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #4FB645, #2d8a3a);
+        color: white;
+        padding: 14px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(79, 182, 69, 0.3);
+        animation: slideIn 0.3s ease;
+    `;
+    document.body.appendChild(div);
+    setTimeout(() => {
+        div.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => div.remove(), 300);
+    }, 3000);
 }
 
 function showError(message) {
