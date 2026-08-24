@@ -112,6 +112,15 @@ function setupEventListeners() {
         if (e.target.classList.contains('btn-remove')) {
             e.target.closest('.candidate-input').remove();
         }
+        if (e.target.classList.contains('btn-upload-cv')) {
+            e.target.closest('.candidate-input').querySelector('.candidate-cv-file').click();
+        }
+    });
+
+    candidatesListEl.addEventListener('change', (e) => {
+        if (e.target.classList.contains('candidate-cv-file')) {
+            handleCVFileUpload(e);
+        }
     });
 
     // Search tab
@@ -151,6 +160,46 @@ function getCandidates() {
         }
     });
     return candidates;
+}
+
+async function handleCVFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const candidateInput = e.target.closest('.candidate-input');
+    const profileField = candidateInput.querySelector('.candidate-profile');
+    const nameField = candidateInput.querySelector('.candidate-name');
+
+    loadingEl.classList.remove('hidden');
+    loadingEl.querySelector('p').textContent = 'Processing CV...';
+
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/extract-cv', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to process CV');
+        }
+
+        const data = await response.json();
+
+        // Auto-fill fields
+        if (data.candidate_name && !nameField.value) {
+            nameField.value = data.candidate_name;
+        }
+        profileField.value = data.profile;
+
+        loadingEl.classList.add('hidden');
+    } catch (error) {
+        loadingEl.classList.add('hidden');
+        showError('Error processing CV: ' + error.message);
+    }
 }
 
 function showError(message) {
