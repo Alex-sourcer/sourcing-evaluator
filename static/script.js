@@ -2,6 +2,8 @@
 const jobDescriptionEl = document.getElementById('jobDescription');
 const candidatesListEl = document.getElementById('candidatesList');
 const addCandidateBtnEl = document.getElementById('addCandidateBtn');
+const uploadDocBtnEl = document.getElementById('uploadDocBtn');
+const cvUploadEl = document.getElementById('cvUpload');
 const evaluateBtnEl = document.getElementById('evaluateBtn');
 const clearBtnEl = document.getElementById('clearBtn');
 const loadingEl = document.getElementById('loadingIndicator');
@@ -97,6 +99,8 @@ function switchTab(tabName) {
 function setupEventListeners() {
     // Evaluator tab
     addCandidateBtnEl.addEventListener('click', addCandidate);
+    uploadDocBtnEl.addEventListener('click', () => cvUploadEl.click());
+    cvUploadEl.addEventListener('change', handleCVUpload);
     evaluateBtnEl.addEventListener('click', evaluateCandidates);
     clearBtnEl.addEventListener('click', clearForm);
     exportCsvBtnEl.addEventListener('click', exportToCSV);
@@ -151,6 +155,52 @@ function getCandidates() {
         }
     });
     return candidates;
+}
+
+async function handleCVUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        loadingEl.classList.remove('hidden');
+        loadingEl.querySelector('p').textContent = 'Extracting CV information...';
+
+        const response = await fetch('/api/extract-cv', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) throw new Error('Failed to extract CV');
+
+        const data = await response.json();
+
+        // Add new candidate row with extracted info
+        addCandidate();
+        const lastRow = document.querySelector('.candidate-input:last-child');
+        lastRow.querySelector('.candidate-name').value = data.candidate_name || '';
+        lastRow.querySelector('.candidate-profile').value = data.profile || '';
+
+        loadingEl.classList.add('hidden');
+        showSuccess(`✓ Added ${data.candidate_name || 'candidate'} from CV`);
+
+        // Reset file input
+        cvUploadEl.value = '';
+    } catch (error) {
+        loadingEl.classList.add('hidden');
+        showError('Error processing CV: ' + error.message);
+    }
+}
+
+function showSuccess(message) {
+    const div = document.createElement('div');
+    div.className = 'success-message';
+    div.textContent = message;
+    div.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4FB645; color: white; padding: 12px 16px; border-radius: 8px; z-index: 1000;';
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 3000);
 }
 
 function showError(message) {

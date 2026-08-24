@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -11,6 +11,7 @@ import google.generativeai as genai
 from functools import lru_cache
 import sqlite3
 from mambu_framework import get_mambu_framework_prompt, MAMBU_LEVELS
+import mimetypes
 
 app = FastAPI()
 
@@ -382,6 +383,81 @@ Return ONLY valid JSON, no additional text.
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/extract-cv")
+async def extract_cv(file: UploadFile = File(...)):
+    """Extract candidate info from CV (PDF, Word, TXT)"""
+    try:
+        # Read file
+        contents = await file.read()
+
+        # Get MIME type
+        mime_type, _ = mimetypes.guess_type(file.filename)
+        if not mime_type:
+            mime_type = "application/octet-stream"
+
+        # For text files, decode directly
+        if mime_type == "text/plain" or file.filename.endswith(".txt"):
+            text_content = contents.decode('utf-8', errors='ignore')
+            prompt = f"""Extract candidate information from this CV/resume text. Return ONLY a JSON object with these fields:
+{{
+    "candidate_name": "full name if found",
+    "profile_summary": "2-3 sentences summarizing experience, skills, years, tech stack, key achievements"
+}}
+
+CV TEXT:
+{text_content}
+
+Return ONLY valid JSON, no additional text."""
+
+            model = genai.GenerativeModel("gemini-3.6-flash")
+            response = model.generate_content(prompt)
+            result = json.loads(response.text.strip())
+
+            return {
+                "success": True,
+                "candidate_name": result.get("candidate_name", ""),
+                "profile": result.get("profile_summary", "")
+            }
+
+        # For PDF and Word, use Gemini's file upload API
+        else:
+            # Upload file to Gemini
+            uploaded_file = genai.upload_file(
+                path=file.filename,
+                mime_type=mime_type
+            )
+
+            prompt = """Extract candidate information from this resume/CV document. Return ONLY a JSON object with:
+{
+    "candidate_name": "full name if found",
+    "profile_summary": "2-3 sentences summarizing: years of experience, key skills, tech stack, major achievements, current level"
+}
+
+Return ONLY valid JSON, no additional text."""
+
+            model = genai.GenerativeModel("gemini-3.6-flash")
+            response = model.generate_content([
+                prompt,
+                uploaded_file
+            ])
+
+            result = json.loads(response.text.strip())
+
+            # Clean up uploaded file
+            try:
+                genai.delete_file(uploaded_file.name)
+            except:
+                pass
+
+            return {
+                "success": True,
+                "candidate_name": result.get("candidate_name", ""),
+                "profile": result.get("profile_summary", "")
+            }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 @app.post("/api/candidate-outcome")
 async def record_candidate_outcome(
