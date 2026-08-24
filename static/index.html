@@ -15,7 +15,7 @@
                     <button class="tab-btn active" data-tab="evaluator">Evaluator</button>
                     <button class="tab-btn" data-tab="search">Candidate Finder</button>
                     <button class="tab-btn" data-tab="dashboard">Analytics</button>
-                    <button class="tab-btn" data-tab="admin">🔧 Admin</button>
+                    <button class="tab-btn" data-tab="admin" id="adminTabBtn" style="display: none;">🔧 Admin</button>
                 </div>
             </div>
             <p class="subtitle">AI-Powered Candidate Evaluation & Insights</p>
@@ -249,6 +249,18 @@
                 </div>
             </div>
 
+        </div>
+
+        <!-- Admin Login Modal -->
+        <div id="adminLoginModal" class="modal hidden">
+            <div class="modal-content">
+                <button class="modal-close">&times;</button>
+                <h3>Admin Access</h3>
+                <p>Enter admin password to access the dashboard:</p>
+                <input type="password" id="adminPassword" placeholder="Admin Password" class="admin-password-input">
+                <button id="adminLoginBtn" class="btn-primary" style="width: 100%; margin-top: 15px;">Login</button>
+                <p id="adminErrorMsg" style="color: var(--danger); margin-top: 10px; display: none;"></p>
+            </div>
         </div>
 
         <!-- Share Modal -->

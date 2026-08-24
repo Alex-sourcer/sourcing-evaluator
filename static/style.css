@@ -1244,3 +1244,21 @@ textarea {
     flex: 1;
     max-width: 200px;
 }
+
+/* Admin Login */
+.admin-password-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    background: var(--bg-secondary);
+    color: var(--text);
+    font-family: inherit;
+}
+
+.admin-password-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 182, 69, 0.1);
+}

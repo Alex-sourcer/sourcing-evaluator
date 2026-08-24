@@ -925,3 +925,100 @@ document.addEventListener('tabChange', (e) => {
         loadAdminMetrics();
     }
 });
+
+// Admin Authentication
+const adminTabBtn = document.getElementById('adminTabBtn');
+const adminLoginModal = document.getElementById('adminLoginModal');
+const adminLoginBtn = document.getElementById('adminLoginBtn');
+const adminPassword = document.getElementById('adminPassword');
+const adminErrorMsg = document.getElementById('adminErrorMsg');
+
+// Admin password (change this to your secure password)
+const ADMIN_PASSWORD = 'mambu2024'; // ⚠️ Change this!
+
+function checkAdminAuth() {
+    return sessionStorage.getItem('adminAuthenticated') === 'true';
+}
+
+function setAdminAuth(authenticated) {
+    if (authenticated) {
+        sessionStorage.setItem('adminAuthenticated', 'true');
+        adminTabBtn.style.display = 'block';
+        adminLoginModal.classList.add('hidden');
+        return true;
+    } else {
+        sessionStorage.removeItem('adminAuthenticated');
+        adminTabBtn.style.display = 'none';
+        return false;
+    }
+}
+
+function showAdminLogin() {
+    adminLoginModal.classList.remove('hidden');
+    adminPassword.value = '';
+    adminPassword.focus();
+    adminErrorMsg.style.display = 'none';
+}
+
+function verifyAdminPassword() {
+    const pwd = adminPassword.value;
+    
+    if (pwd === ADMIN_PASSWORD) {
+        setAdminAuth(true);
+        loadAdminMetrics();
+        switchTab('admin');
+    } else {
+        adminErrorMsg.textContent = 'Incorrect password';
+        adminErrorMsg.style.display = 'block';
+        adminPassword.value = '';
+        adminPassword.focus();
+    }
+}
+
+// Check if already authenticated on load
+document.addEventListener('DOMContentLoaded', () => {
+    if (checkAdminAuth()) {
+        adminTabBtn.style.display = 'block';
+    }
+});
+
+// Admin tab click - show login if not authenticated
+if (adminTabBtn) {
+    adminTabBtn.addEventListener('click', (e) => {
+        if (!checkAdminAuth()) {
+            e.preventDefault();
+            showAdminLogin();
+        }
+    });
+}
+
+// Admin login button
+if (adminLoginBtn) {
+    adminLoginBtn.addEventListener('click', verifyAdminPassword);
+}
+
+// Enter key in password field
+if (adminPassword) {
+    adminPassword.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            verifyAdminPassword();
+        }
+    });
+}
+
+// Close login modal
+const adminLoginClose = adminLoginModal ? adminLoginModal.querySelector('.modal-close') : null;
+if (adminLoginClose) {
+    adminLoginClose.addEventListener('click', () => {
+        adminLoginModal.classList.add('hidden');
+    });
+}
+
+// Close on backdrop click
+if (adminLoginModal) {
+    adminLoginModal.addEventListener('click', (e) => {
+        if (e.target === adminLoginModal) {
+            adminLoginModal.classList.add('hidden');
+        }
+    });
+}
