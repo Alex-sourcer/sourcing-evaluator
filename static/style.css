@@ -5,15 +5,20 @@
 }
 
 :root {
-    /* Mambu Corporate Colors */
-    --primary: #0052A3;
-    --primary-dark: #003D7A;
-    --primary-light: #0066CC;
-    --secondary: #00A3E0;
-    --accent: #FF6B35;
-    --success: #00BA63;
-    --warning: #FFB81C;
+    /* Mambu Corporate Colors - Official Palette */
+    --primary: #4FB645;
+    --primary-dark: #3d9138;
+    --secondary: #057472;
+    --accent: #69ACAA;
+    --success: #4FB645;
+    --warning: #AFD2D2;
     --danger: #E01E37;
+    --mambu-grey: #212121;
+    --mambu-cream: #F5EBE1;
+    --mambu-light-grey: #7A7A7A;
+    --mambu-border-grey: #CACACA;
+    --mambu-light-bg: #F9F2EC;
+    --mambu-white-bg: #FCF9F5;
 
     /* Neutrals */
     --bg: #FFFFFF;

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sourcing Evaluator Agent</title>
+    <title>Sourcing Evaluator | Mambu</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -12,12 +12,12 @@
             <div class="header-top">
                 <h1>Sourcing Evaluator</h1>
                 <div class="nav-tabs">
-                    <button class="tab-btn active" data-tab="evaluator">Evaluador</button>
-                    <button class="tab-btn" data-tab="search">Buscar Candidatos</button>
-                    <button class="tab-btn" data-tab="dashboard">Dashboard</button>
+                    <button class="tab-btn active" data-tab="evaluator">Evaluator</button>
+                    <button class="tab-btn" data-tab="search">Candidate Finder</button>
+                    <button class="tab-btn" data-tab="dashboard">Analytics</button>
                 </div>
             </div>
-            <p class="subtitle">Evaluación inteligente de candidatos con IA</p>
+            <p class="subtitle">AI-Powered Candidate Evaluation & Insights</p>
         </header>
 
         <div class="main-content">
@@ -27,35 +27,35 @@
                 <div class="input-section">
                     <div class="form-group">
                         <label for="jobDescription">Job Description</label>
-                        <textarea id="jobDescription" placeholder="Pega aquí la descripción del puesto..." rows="6"></textarea>
+                        <textarea id="jobDescription" placeholder="Paste job description here..." rows="6"></textarea>
                     </div>
 
                     <div class="candidates-section">
                         <div class="section-header">
-                            <h2>Candidatos a Evaluar</h2>
-                            <button id="addCandidateBtn" class="btn-secondary">+ Agregar Candidato</button>
+                            <h2>Candidates to Evaluate</h2>
+                            <button id="addCandidateBtn" class="btn-secondary">+ Add Candidate</button>
                         </div>
 
                         <div id="candidatesList" class="candidates-list">
                             <div class="candidate-input" data-index="0">
                                 <div class="candidate-row">
-                                    <input type="text" class="candidate-name" placeholder="Nombre del candidato">
-                                    <input type="text" class="candidate-profile" placeholder="Perfil (experiencia, skills)">
-                                    <input type="text" class="candidate-linkedin" placeholder="LinkedIn (opcional)">
-                                    <button type="button" class="btn-remove" title="Eliminar">×</button>
+                                    <input type="text" class="candidate-name" placeholder="Candidate name">
+                                    <input type="text" class="candidate-profile" placeholder="Profile (experience, skills)">
+                                    <input type="text" class="candidate-linkedin" placeholder="LinkedIn (optional)">
+                                    <button type="button" class="btn-remove" title="Remove">×</button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="action-buttons">
-                        <button id="evaluateBtn" class="btn-primary">Evaluar Candidatos</button>
-                        <button id="clearBtn" class="btn-tertiary">Limpiar</button>
+                        <button id="evaluateBtn" class="btn-primary">Evaluate Candidates</button>
+                        <button id="clearBtn" class="btn-tertiary">Clear</button>
                     </div>
 
                     <div id="loadingIndicator" class="loading hidden">
                         <div class="spinner"></div>
-                        <p>Evaluando candidatos con IA...</p>
+                        <p>Evaluating candidates with AI...</p>
                     </div>
 
                     <div id="errorMessage" class="error-message hidden"></div>
@@ -63,12 +63,12 @@
 
                 <div id="resultsSection" class="results-section hidden">
                     <div class="results-header">
-                        <h2>Resultados de la Evaluación</h2>
+                        <h2>Evaluation Results</h2>
                         <div class="results-actions">
                             <button id="exportCsvBtn" class="btn-secondary">📥 CSV</button>
                             <button id="exportSheetsBtn" class="btn-secondary">📊 Sheets</button>
-                            <button id="shareBtn" class="btn-secondary">🔗 Compartir</button>
-                            <button id="newEvalBtn" class="btn-tertiary">Nueva Evaluación</button>
+                            <button id="shareBtn" class="btn-secondary">🔗 Share</button>
+                            <button id="newEvalBtn" class="btn-tertiary">New Evaluation</button>
                         </div>
                     </div>
 
@@ -83,19 +83,19 @@
                 <div class="search-section">
                     <div class="form-group">
                         <label for="searchJobDescription">Job Description</label>
-                        <textarea id="searchJobDescription" placeholder="Pega la descripción del puesto para generar queries de búsqueda..." rows="6"></textarea>
+                        <textarea id="searchJobDescription" placeholder="Paste job description to generate LinkedIn search queries..." rows="6"></textarea>
                     </div>
 
                     <div id="searchLoadingIndicator" class="loading hidden">
                         <div class="spinner"></div>
-                        <p>Generando queries de búsqueda con IA...</p>
+                        <p>Generating search queries with AI...</p>
                     </div>
 
                     <div id="searchErrorMessage" class="error-message hidden"></div>
 
                     <div class="action-buttons">
-                        <button id="generateSearchBtn" class="btn-primary">Generar Queries de Búsqueda</button>
-                        <button id="clearSearchBtn" class="btn-tertiary">Limpiar</button>
+                        <button id="generateSearchBtn" class="btn-primary">Generate Search Queries</button>
+                        <button id="clearSearchBtn" class="btn-tertiary">Clear</button>
                     </div>
 
                     <div id="searchResultsSection" class="search-results hidden">
@@ -113,7 +113,7 @@
                         </div>
 
                         <div class="search-tips-container">
-                            <h3>Tips para la búsqueda</h3>
+                            <h3>Search Tips</h3>
                             <ul id="searchTipsList" class="search-tips-list">
                                 <!-- Tips will be inserted here -->
                             </ul>
@@ -127,7 +127,7 @@
                 <div class="dashboard-container">
                     <div id="dashboardLoading" class="loading">
                         <div class="spinner"></div>
-                        <p>Cargando analytics...</p>
+                        <p>Loading analytics...</p>
                     </div>
 
                     <div id="dashboardContent" class="dashboard-content hidden">
@@ -135,50 +135,50 @@
                         <div class="kpi-grid">
                             <div class="kpi-card">
                                 <div class="kpi-value" id="totalEvals">0</div>
-                                <div class="kpi-label">Evaluaciones Totales</div>
+                                <div class="kpi-label">Total Evaluations</div>
                             </div>
                             <div class="kpi-card">
                                 <div class="kpi-value" id="avgScore">0%</div>
-                                <div class="kpi-label">Match Score Promedio</div>
+                                <div class="kpi-label">Avg Match Score</div>
                             </div>
                             <div class="kpi-card">
                                 <div class="kpi-value" id="topUser">-</div>
-                                <div class="kpi-label">Usuario Más Activo</div>
+                                <div class="kpi-label">Most Active User</div>
                             </div>
                             <div class="kpi-card">
                                 <div class="kpi-value" id="strongYes">0</div>
-                                <div class="kpi-label">Strong Yes Recommendations</div>
+                                <div class="kpi-label">Strong Yes Recs</div>
                             </div>
                         </div>
 
                         <!-- Charts Row -->
                         <div class="charts-grid">
                             <div class="chart-card">
-                                <h3>Recomendaciones (últimas 100)</h3>
+                                <h3>Recommendations</h3>
                                 <div id="recommendationChart" class="chart"></div>
                             </div>
 
                             <div class="chart-card">
-                                <h3>Top Usuarios</h3>
+                                <h3>Top Users</h3>
                                 <div id="userChart" class="chart"></div>
                             </div>
                         </div>
 
                         <!-- Recent Activity -->
                         <div class="activity-card">
-                            <h3>Evaluaciones por Día (últimos 30 días)</h3>
+                            <h3>Activity Timeline (Last 30 Days)</h3>
                             <div id="activityChart" class="activity-chart"></div>
                         </div>
 
                         <!-- Department Stats -->
                         <div class="dept-card">
-                            <h3>Evaluaciones por Departamento</h3>
+                            <h3>Evaluations by Department</h3>
                             <div id="deptList" class="dept-list"></div>
                         </div>
 
                         <!-- Conversion Prediction -->
                         <div class="conversion-card">
-                            <h3>Predicción de Conversión (Hiring Rate)</h3>
+                            <h3>Conversion Prediction (Hiring Rate)</h3>
                             <div id="conversionStats"></div>
                             <div id="conversionBands"></div>
                             <div class="conversion-insights">
@@ -195,11 +195,11 @@
         <div id="shareModal" class="modal hidden">
             <div class="modal-content">
                 <button class="modal-close">&times;</button>
-                <h3>Compartir Evaluación</h3>
-                <p>Copia este link para compartir con tu equipo:</p>
+                <h3>Share Evaluation</h3>
+                <p>Copy this link to share with your team:</p>
                 <div class="share-link-container">
                     <input type="text" id="shareLink" readonly class="share-link">
-                    <button id="copyLinkBtn" class="btn-secondary">Copiar</button>
+                    <button id="copyLinkBtn" class="btn-secondary">Copy</button>
                 </div>
             </div>
         </div>
