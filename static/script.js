@@ -87,6 +87,11 @@ function switchTab(tabName) {
     if (tabName === 'dashboard') {
         loadDashboard();
     }
+
+    // Load admin metrics if switching to admin
+    if (tabName === 'admin') {
+        loadAdminMetrics();
+    }
 }
 
 function setupEventListeners() {
@@ -760,3 +765,163 @@ async function checkIfSharedEvaluation() {
         addCandidate();
     }
 }
+
+// Admin Dashboard Logic
+const adminTotalEvalsEl = document.getElementById('adminTotalEvals');
+const adminUsersEl = document.getElementById('adminUsers');
+const adminAvgScoreEl = document.getElementById('adminAvgScore');
+const adminTimeSavedEl = document.getElementById('adminTimeSaved');
+const adminConversionEl = document.getElementById('adminConversion');
+const adminUsersListEl = document.getElementById('adminUsersList');
+const adminScoreDistEl = document.getElementById('adminScoreDist');
+const adminActivityChartEl = document.getElementById('adminActivityChart');
+const exportAdminReportBtn = document.getElementById('exportAdminReportBtn');
+const refreshAdminBtn = document.getElementById('refreshAdminBtn');
+
+async function loadAdminMetrics() {
+    try {
+        const response = await fetch('/api/admin/metrics');
+        const data = await response.json();
+        displayAdminMetrics(data);
+    } catch (error) {
+        console.error('Error loading admin metrics:', error);
+    }
+}
+
+function displayAdminMetrics(data) {
+    const summary = data.summary;
+    
+    // Update summary cards
+    adminTotalEvalsEl.textContent = summary.total_evaluations;
+    adminUsersEl.textContent = summary.unique_users;
+    adminAvgScoreEl.textContent = summary.avg_match_score + '%';
+    adminTimeSavedEl.textContent = summary.time_saved_hours;
+    adminConversionEl.textContent = summary.conversion_rate + '%';
+    
+    // Display users activity
+    displayUsersActivity(data.by_user);
+    
+    // Display score distribution
+    displayScoreDistribution(data.score_distribution);
+    
+    // Display activity chart
+    displayActivityChart(data.by_date);
+}
+
+function displayUsersActivity(users) {
+    adminUsersListEl.innerHTML = '';
+    
+    users.forEach(user => {
+        const userDiv = document.createElement('div');
+        userDiv.className = 'user-item';
+        userDiv.innerHTML = `
+            <div class="user-info">
+                <div class="user-name">${escapeHtml(user.user)}</div>
+                <div class="user-stats">${user.evals} evaluations</div>
+            </div>
+            <div class="user-evals">
+                <div class="eval-count">${user.evals}</div>
+                <div class="eval-avg">${user.avg_score}% avg</div>
+            </div>
+        `;
+        adminUsersListEl.appendChild(userDiv);
+    });
+    
+    if (users.length === 0) {
+        adminUsersListEl.innerHTML = '<p style="color: var(--text-secondary);">No user data yet</p>';
+    }
+}
+
+function displayScoreDistribution(scores) {
+    adminScoreDistEl.innerHTML = '';
+    
+    const maxCount = Math.max(...Object.values(scores), 1);
+    const bands = ['80-100', '60-79', '40-59', '0-39'];
+    
+    bands.forEach(band => {
+        const count = scores[band] || 0;
+        const percentage = (count / maxCount) * 100;
+        
+        const bandDiv = document.createElement('div');
+        bandDiv.className = 'score-band';
+        bandDiv.innerHTML = `
+            <div class="band-label">${band}%</div>
+            <div class="band-bar">
+                <div class="band-fill" style="width: ${percentage}%">
+                    ${count > 0 ? count : ''}
+                </div>
+            </div>
+        `;
+        adminScoreDistEl.appendChild(bandDiv);
+    });
+}
+
+function displayActivityChart(activity) {
+    adminActivityChartEl.innerHTML = '';
+    
+    if (activity.length === 0) {
+        adminActivityChartEl.innerHTML = '<p style="color: var(--text-secondary);">No activity data</p>';
+        return;
+    }
+    
+    const maxCount = Math.max(...activity.map(a => a.count), 1);
+    
+    activity.forEach(day => {
+        const height = (day.count / maxCount) * 100;
+        const barDiv = document.createElement('div');
+        barDiv.className = 'activity-bar';
+        barDiv.style.height = Math.max(height, 5) + '%';
+        barDiv.innerHTML = `<div class="activity-tooltip">${day.date}: ${day.count}</div>`;
+        adminActivityChartEl.appendChild(barDiv);
+    });
+}
+
+function exportAdminReport() {
+    fetch('/api/admin/metrics')
+        .then(r => r.json())
+        .then(data => {
+            const csv = generateAdminCSV(data);
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `admin-report-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        });
+}
+
+function generateAdminCSV(data) {
+    let csv = 'ADMIN REPORT\n';
+    csv += `Generated: ${new Date().toISOString()}\n\n`;
+    
+    csv += 'SUMMARY\n';
+    const s = data.summary;
+    csv += `Total Evaluations,${s.total_evaluations}\n`;
+    csv += `Active Users,${s.unique_users}\n`;
+    csv += `Avg Match Score,${s.avg_match_score}%\n`;
+    csv += `Time Saved (hours),${s.time_saved_hours}\n`;
+    csv += `Conversion Rate,${s.conversion_rate}%\n\n`;
+    
+    csv += 'USER ACTIVITY\n';
+    csv += 'User,Evaluations,Avg Score\n';
+    data.by_user.forEach(u => {
+        csv += `${u.user},${u.evals},${u.avg_score}%\n`;
+    });
+    
+    return csv;
+}
+
+if (exportAdminReportBtn) {
+    exportAdminReportBtn.addEventListener('click', exportAdminReport);
+}
+
+if (refreshAdminBtn) {
+    refreshAdminBtn.addEventListener('click', loadAdminMetrics);
+}
+
+// Load admin metrics when dashboard tab is opened
+document.addEventListener('tabChange', (e) => {
+    if (e.detail === 'admin') {
+        loadAdminMetrics();
+    }
+});

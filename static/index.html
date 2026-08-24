@@ -15,6 +15,7 @@
                     <button class="tab-btn active" data-tab="evaluator">Evaluator</button>
                     <button class="tab-btn" data-tab="search">Candidate Finder</button>
                     <button class="tab-btn" data-tab="dashboard">Analytics</button>
+                    <button class="tab-btn" data-tab="admin">🔧 Admin</button>
                 </div>
             </div>
             <p class="subtitle">AI-Powered Candidate Evaluation & Insights</p>
@@ -185,6 +186,65 @@
                                 <p id="conversionInsight" style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 16px;"></p>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ TAB 4: ADMIN DASHBOARD ============ -->
+            <div id="admin-tab" class="tab-content">
+                <div class="admin-container">
+                    <h2>Admin Dashboard</h2>
+                    <p class="subtitle-small">Team Usage Metrics & ROI Report</p>
+
+                    <!-- Summary Cards -->
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="summary-value" id="adminTotalEvals">0</div>
+                            <div class="summary-label">Total Evaluations</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-value" id="adminUsers">0</div>
+                            <div class="summary-label">Active Users</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-value" id="adminAvgScore">0%</div>
+                            <div class="summary-label">Avg Match Score</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-value" id="adminTimeSaved">0h</div>
+                            <div class="summary-label">Time Saved</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-value" id="adminConversion">0%</div>
+                            <div class="summary-label">Conversion Rate</div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Metrics -->
+                    <div class="metrics-grid">
+                        <!-- Users Activity -->
+                        <div class="metric-card">
+                            <h3>Users Activity</h3>
+                            <div id="adminUsersList" class="users-list"></div>
+                        </div>
+
+                        <!-- Score Distribution -->
+                        <div class="metric-card">
+                            <h3>Score Distribution</h3>
+                            <div id="adminScoreDist" class="score-dist"></div>
+                        </div>
+                    </div>
+
+                    <!-- Activity Chart -->
+                    <div class="metric-card full-width">
+                        <h3>Usage Timeline (Last 30 Days)</h3>
+                        <div id="adminActivityChart" class="activity-chart"></div>
+                    </div>
+
+                    <!-- Export Button -->
+                    <div class="admin-actions">
+                        <button id="exportAdminReportBtn" class="btn-primary">📊 Export Report</button>
+                        <button id="refreshAdminBtn" class="btn-secondary">🔄 Refresh</button>
                     </div>
                 </div>
             </div>

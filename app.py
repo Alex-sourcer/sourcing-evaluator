@@ -504,6 +504,91 @@ async def export_to_google_sheets():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/admin/metrics")
+async def admin_metrics():
+    """Get admin dashboard metrics for reporting"""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    # Total metrics
+    c.execute("SELECT COUNT(*) FROM evaluations")
+    total_evals = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(DISTINCT user_email) FROM evaluations WHERE user_email IS NOT NULL")
+    unique_users = c.fetchone()[0]
+
+    c.execute("SELECT AVG(CAST(json_extract(results, '$[0].match_score') AS INTEGER)) FROM evaluations")
+    avg_score = c.fetchone()[0] or 0
+
+    # Evals by user
+    c.execute("""
+        SELECT user_email, COUNT(*) as eval_count,
+               AVG(CAST(json_extract(results, '$[0].match_score') AS INTEGER)) as avg_score
+        FROM evaluations
+        WHERE user_email IS NOT NULL
+        GROUP BY user_email
+        ORDER BY eval_count DESC
+    """)
+    by_user = [{"user": row[0] or "Anonymous", "evals": row[1], "avg_score": round(row[2] or 0, 1)} for row in c.fetchall()]
+
+    # Evals by date (last 30 days)
+    c.execute("""
+        SELECT DATE(created_at), COUNT(*)
+        FROM evaluations
+        WHERE datetime(created_at) > datetime('now', '-30 days')
+        GROUP BY DATE(created_at)
+        ORDER BY DATE(created_at)
+    """)
+    by_date = [{"date": row[0], "count": row[1]} for row in c.fetchall()]
+
+    # Score distribution
+    c.execute("""
+        SELECT
+            CASE
+                WHEN CAST(json_extract(results, '$[0].match_score') AS INTEGER) >= 80 THEN '80-100'
+                WHEN CAST(json_extract(results, '$[0].match_score') AS INTEGER) >= 60 THEN '60-79'
+                WHEN CAST(json_extract(results, '$[0].match_score') AS INTEGER) >= 40 THEN '40-59'
+                ELSE '0-39'
+            END as band,
+            COUNT(*) as count
+        FROM evaluations
+        GROUP BY band
+    """)
+    score_dist = {row[0]: row[1] for row in c.fetchall()}
+
+    # Conversion metrics
+    c.execute("SELECT COUNT(*) FROM candidate_outcomes WHERE hired = 1")
+    total_hired = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM candidate_outcomes")
+    total_tracked = c.fetchone()[0]
+
+    conv_rate = (total_hired / total_tracked * 100) if total_tracked > 0 else 0
+
+    # Time saved estimate (10 min per candidate screening)
+    time_saved_mins = total_evals * 10
+    time_saved_hours = time_saved_mins / 60
+
+    conn.close()
+
+    return {
+        "summary": {
+            "total_evaluations": total_evals,
+            "unique_users": unique_users,
+            "avg_match_score": round(avg_score, 1),
+            "conversion_rate": round(conv_rate, 1),
+            "time_saved_hours": round(time_saved_hours, 1)
+        },
+        "by_user": by_user,
+        "by_date": by_date,
+        "score_distribution": score_dist,
+        "hiring_metrics": {
+            "total_hired": total_hired,
+            "total_tracked": total_tracked,
+            "conversion_rate": round(conv_rate, 1)
+        }
+    }
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok"}
