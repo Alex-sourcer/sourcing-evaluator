@@ -7,18 +7,18 @@ import json
 import os
 from pathlib import Path
 import uuid
-from groq import Groq
+import google.generativeai as genai
 from functools import lru_cache
 import sqlite3
 from mambu_framework import get_mambu_framework_prompt, MAMBU_LEVELS
 
 app = FastAPI()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-if not GROQ_API_KEY:
-    raise ValueError("GROQ_API_KEY environment variable not set")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY environment variable not set")
 
-client = Groq(api_key=GROQ_API_KEY)
+genai.configure(api_key=GEMINI_API_KEY)
 
 DB_PATH = Path("evaluations.db")
 
@@ -158,7 +158,7 @@ Return ONLY JSON, no other text."""
 
     try:
         # Extract and clean response text
-        response_text = response.choices[0].message.content.strip()
+        response_text = response.text.strip()
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0]
         elif "```" in response_text:
@@ -353,12 +353,8 @@ Return ONLY valid JSON, no additional text.
 """
 
     try:
-        response = client.chat.completions.create(
-            model="llama-3-70b-8192",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-            max_tokens=1000
-        )
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(prompt)
         result = json.loads(response.choices[0].message.content)
 
         search_id = str(uuid.uuid4())
