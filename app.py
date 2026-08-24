@@ -7,18 +7,18 @@ import json
 import os
 from pathlib import Path
 import uuid
-import google.generativeai as genai
+from groq import Groq
 from functools import lru_cache
 import sqlite3
 from mambu_framework import get_mambu_framework_prompt, MAMBU_LEVELS
 
 app = FastAPI()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY environment variable not set")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+if not GROQ_API_KEY:
+    raise ValueError("GROQ_API_KEY environment variable not set")
 
-genai.configure(api_key=GEMINI_API_KEY)
+client = Groq(api_key=GROQ_API_KEY)
 
 DB_PATH = Path("evaluations.db")
 
@@ -132,45 +132,37 @@ def get_evaluation(eval_id: str):
     }
 
 def evaluate_with_gemini(job_description: str, candidate: Candidate) -> dict:
-    """Use Gemini API to evaluate a candidate against job description AND Mambu Career Framework"""
+    """Use Groq API to evaluate a candidate against job description AND Mambu Career Framework"""
 
-    prompt = f"""
-You are an expert talent acquisition specialist at Mambu. Evaluate this candidate.
+    prompt = f"""You are an expert talent acquisition specialist at Mambu. Evaluate this candidate.
 
-MAMBU LEVELS REFERENCE:
-Level 8-7: Entry/Associate
-Level 6: Intermediate
-Level 5: Experienced (expert-level, independent problem-solving)
-Level 4: Senior (mastery, drives decisions, mentors)
-Level 3: Advanced Senior (domain expert, technical strategy)
-Level 2: Director/VP (strategic leadership)
-Levels 1-0: Executive (LT, CEO)
+MAMBU LEVELS: Level 8-7: Entry/Associate | Level 6: Intermediate | Level 5: Experienced | Level 4: Senior | Level 3: Advanced Senior | Level 2: Director/VP | Levels 1-0: Executive
 
-Career Paths: IC (Individual Contributor - technical) or TL (Team Leader - management)
+Career Paths: IC (Individual Contributor) or TL (Team Leader)
 
 JOB DESCRIPTION: {job_description}
 
 CANDIDATE: {candidate.name}
 Profile: {candidate.profile}
 
-Evaluate in JSON with ONLY these fields (no extra fields):
-{{"match_score": 0-100, "technical_fit": "one sentence", "strengths": ["s1", "s2", "s3"], "red_flags": ["r1", "r2"], "questions": ["q1", "q2", "q3"], "recommendation": "STRONG YES/YES/MAYBE/NO", "reasoning": "2 sentences", "mambu_level_fit": 0-8, "mambu_career_path": "IC or TL", "growth_potential": "timeline or assessment"}}
+Return JSON with: match_score (0-100), technical_fit, strengths (list), red_flags (list), questions (list), recommendation (STRONG YES/YES/MAYBE/NO), reasoning, mambu_level_fit (0-8), mambu_career_path (IC or TL), growth_potential
 
-Return ONLY JSON, no text before or after.
-"""
+Return ONLY JSON, no other text."""
 
-    model = genai.GenerativeModel("gemini-3.6-flash")
-    response = model.generate_content(prompt)
+    response = client.chat.completions.create(
+        model="llama-3.1-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+        max_tokens=1000
+    )
 
     try:
-        # Clean response text
-        response_text = response.text.strip()
-        if response_text.startswith("```json"):
-            response_text = response_text[7:]
-        if response_text.startswith("```"):
-            response_text = response_text[3:]
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]
+        # Extract and clean response text
+        response_text = response.choices[0].message.content.strip()
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0]
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0]
         response_text = response_text.strip()
 
         result = json.loads(response_text)
@@ -361,9 +353,13 @@ Return ONLY valid JSON, no additional text.
 """
 
     try:
-        model = genai.GenerativeModel("gemini-3.6-flash")
-        response = model.generate_content(prompt)
-        result = json.loads(response.text)
+        response = client.chat.completions.create(
+            model="llama-3.1-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=1000
+        )
+        result = json.loads(response.choices[0].message.content)
 
         search_id = str(uuid.uuid4())
         conn = sqlite3.connect(DB_PATH)
