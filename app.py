@@ -10,6 +10,7 @@ import uuid
 import google.generativeai as genai
 from functools import lru_cache
 import sqlite3
+from mambu_framework import get_mambu_framework_prompt, MAMBU_LEVELS
 
 app = FastAPI()
 
@@ -91,6 +92,10 @@ class EvaluationResult(BaseModel):
     questions: list[str]
     recommendation: str
     reasoning: str
+    mambu_level_fit: int = None
+    mambu_career_path: str = None
+    mambu_level_description: str = None
+    growth_potential: str = None
 
 def save_evaluation(job_desc: str, candidates: list[Candidate], results: list[dict], user_email: str = None):
     """Save evaluation to database"""
@@ -127,9 +132,14 @@ def get_evaluation(eval_id: str):
     }
 
 def evaluate_with_gemini(job_description: str, candidate: Candidate) -> dict:
-    """Use Gemini API to evaluate a candidate against job description"""
+    """Use Gemini API to evaluate a candidate against job description AND Mambu Career Framework"""
+
+    mambu_context = get_mambu_framework_prompt()
+
     prompt = f"""
-You are an expert talent acquisition specialist. Evaluate this candidate against the job description.
+You are an expert talent acquisition specialist at Mambu. Evaluate this candidate against the job description AND the Mambu Career Framework.
+
+{mambu_context}
 
 JOB DESCRIPTION:
 {job_description}
@@ -139,14 +149,23 @@ Name: {candidate.name}
 Profile: {candidate.profile}
 LinkedIn: {candidate.linkedin if candidate.linkedin else "Not provided"}
 
+EVALUATION TASK:
+1. Assess general fit against job description
+2. Determine best fit Mambu Level (0-8) for this candidate
+3. Assess if candidate is better suited for Individual Contributor (IC) or Team Leader (TL) path
+4. Estimate growth potential (can they reach next level? in how long?)
+
 Provide a comprehensive evaluation in JSON format with these exact fields:
-- match_score (0-100, percentage)
-- technical_fit (one sentence summary)
+- match_score (0-100, percentage against job requirements)
+- technical_fit (one sentence summary of technical match)
 - strengths (list of 3-4 key strengths)
 - red_flags (list of 2-3 concerns or gaps, or empty list if none)
-- questions (list of 3 clarifying questions to ask in interview)
+- questions (list of 3 clarifying interview questions)
 - recommendation (STRONG YES, YES, MAYBE, or NO)
 - reasoning (2-3 sentences explaining the recommendation)
+- mambu_level_fit (0-8, best fit Mambu level, use 4=Senior as default if unclear)
+- mambu_career_path (IC or TL - which path fits better?)
+- growth_potential (e.g., "Can reach Level 5 in 12-18 months" or "Currently at max level")
 
 Return ONLY valid JSON, no additional text.
 """
@@ -157,6 +176,24 @@ Return ONLY valid JSON, no additional text.
     try:
         result = json.loads(response.text)
         result["candidate_name"] = candidate.name
+
+        # Ensure Mambu fields have defaults
+        if "mambu_level_fit" not in result:
+            result["mambu_level_fit"] = 4
+        if "mambu_career_path" not in result:
+            result["mambu_career_path"] = "IC"
+        if "growth_potential" not in result:
+            result["growth_potential"] = "Not assessed"
+
+        # Add Mambu level description
+        level = result.get("mambu_level_fit", 4)
+        career_path = result.get("mambu_career_path", "IC")
+        if level in MAMBU_LEVELS:
+            if career_path == "TL":
+                result["mambu_level_description"] = MAMBU_LEVELS[level]["tl_description"]
+            else:
+                result["mambu_level_description"] = MAMBU_LEVELS[level]["ic_description"]
+
         return result
     except json.JSONDecodeError:
         raise ValueError(f"Failed to parse Gemini response for {candidate.name}")
