@@ -151,7 +151,7 @@ Provide a comprehensive evaluation in JSON format with these exact fields:
 Return ONLY valid JSON, no additional text.
 """
 
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-1.5-pro")
     response = model.generate_content(prompt)
 
     try:
