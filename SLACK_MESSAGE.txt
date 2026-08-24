@@ -1,0 +1,109 @@
+🚀 INTRODUCING: Sourcing Evaluator Agent
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+We've built an AI-powered tool that evaluates candidates 10x faster while aligning with Mambu's Career Framework.
+
+Stop screening candidates manually. Start making data-driven hiring decisions in seconds.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📍 ACCESS IT HERE:
+https://sourcing-evaluator-1.onrender.com
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚡ WHAT IT DOES:
+
+Tab 1: EVALUATOR
+✅ Paste job description + add candidates
+✅ Get instant AI evaluation (30 seconds per candidate)
+✅ Results include: Match score, Mambu Level (0-8), Career path (IC vs TL), Growth potential
+✅ Plus: Technical fit, strengths, red flags, interview questions
+
+Example:
+"Sofia Chen - Match: 95%, Level 5 IC, Growth: Promotion to Level 4 within 12-18 months"
+
+Tab 2: CANDIDATE FINDER
+✅ Paste JD → AI generates 7 optimized LinkedIn search queries
+✅ Ideal candidate profile + search tips included
+
+Tab 3: ANALYTICS
+✅ See team metrics in real-time
+✅ Conversion rates by Mambu Level
+✅ Time saved calculation
+✅ Export reports for leadership
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💰 THE VALUE:
+
+SPEED:  12 min/candidate → 30 sec = 96% faster
+CONSISTENCY: Global standard (Level 5 = same everywhere)
+DATA-DRIVEN: Know exactly what level you hired
+SCALE: Evaluate 100 candidates in 50 minutes vs 20 hours
+
+For 1 position (100 candidates):
+✓ Time saved: 20 hours
+✓ Cost saved: €1,000 in TA time
+✓ Quality: Framework-aligned evaluation
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 HOW TO USE IT:
+
+SOURCERS:
+1. Tab 2 → Generate LinkedIn search queries
+2. Search on LinkedIn → Find candidates
+3. Tab 1 → Batch evaluate
+4. Export → Share with hiring managers
+
+HIRING MANAGERS:
+1. Receive evaluation results
+2. Review: Score + Level + Recommendation
+3. Prioritize interviews by data
+4. Make confident hiring decisions
+
+TA MANAGERS:
+1. Tab 3 → Check analytics
+2. See: "Level 5 candidates: 85% conversion rate"
+3. Export report → Share with leadership
+4. Optimize hiring based on data
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 DOCUMENTATION:
+
+→ Full guide: See attachment (README_EN.md)
+→ For admins: See attachment (MAMBU_FRAMEWORK_GUIDE.md)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔐 SECURITY & COST:
+
+✅ No login required (except admin dashboard)
+✅ Data stored locally, never shared externally
+✅ Admin dashboard password protected
+✅ Cost: €0 (free tier supports 2-5 concurrent users)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 GET STARTED THIS WEEK:
+
+1. Open: https://sourcing-evaluator-1.onrender.com
+2. Try Tab 1 (Evaluator) with a real position
+3. Compare results to manual screening
+4. Share feedback in thread
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❓ QUESTIONS?
+
+→ DM Alejandro (@alejandro) for setup help
+→ Post in thread for feature requests & feedback
+→ Bug reports: Screenshot + description
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 The bet: In 2 weeks, you'll wonder how you ever screened candidates manually.
+
+Let's go. 🚀
