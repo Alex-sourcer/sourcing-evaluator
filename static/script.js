@@ -143,8 +143,10 @@ function addCandidate() {
         <div class="candidate-row">
             <input type="text" class="candidate-name" placeholder="Candidate name">
             <textarea class="candidate-profile" placeholder="Profile: experience, skills, years, tech stack, achievements..."></textarea>
+            <button type="button" class="btn-upload-cv" title="Upload CV">📄</button>
             <button type="button" class="btn-remove" title="Remove">×</button>
         </div>
+        <input type="file" class="candidate-cv-file" style="display: none;" accept=".txt,.pdf">
     `;
     candidatesListEl.appendChild(candidateDiv);
 }
