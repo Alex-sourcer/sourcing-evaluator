@@ -247,23 +247,32 @@ textarea {
 }
 
 .candidate-row {
-    display: grid;
-    grid-template-columns: 1.5fr 2fr 1.5fr 40px;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
-    align-items: center;
+}
+
+.candidate-row > .btn-remove {
+    align-self: flex-end;
+    margin-top: -38px;
+    margin-right: 0;
 }
 
 @media (max-width: 640px) {
     .candidate-row {
-        grid-template-columns: 1fr;
+        flex-direction: column;
     }
 }
 
 .candidate-name,
-.candidate-profile,
-.candidate-linkedin {
+.candidate-profile {
     padding: 12px 14px;
     font-size: 0.9rem;
+}
+
+.candidate-profile {
+    min-height: 80px;
+    resize: vertical;
 }
 
 .btn-remove {

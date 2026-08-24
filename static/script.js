@@ -132,10 +132,9 @@ function addCandidate() {
     candidateDiv.dataset.index = index;
     candidateDiv.innerHTML = `
         <div class="candidate-row">
-            <input type="text" class="candidate-name" placeholder="Nombre del candidato">
-            <input type="text" class="candidate-profile" placeholder="Perfil (experiencia, skills)">
-            <input type="text" class="candidate-linkedin" placeholder="LinkedIn (opcional)">
-            <button type="button" class="btn-remove" title="Eliminar">×</button>
+            <input type="text" class="candidate-name" placeholder="Candidate name">
+            <textarea class="candidate-profile" placeholder="Profile: experience, skills, years, tech stack, achievements..."></textarea>
+            <button type="button" class="btn-remove" title="Remove">×</button>
         </div>
     `;
     candidatesListEl.appendChild(candidateDiv);
@@ -146,10 +145,9 @@ function getCandidates() {
     document.querySelectorAll('.candidate-input').forEach((div) => {
         const name = div.querySelector('.candidate-name').value.trim();
         const profile = div.querySelector('.candidate-profile').value.trim();
-        const linkedin = div.querySelector('.candidate-linkedin').value.trim();
 
         if (name && profile) {
-            candidates.push({ name, profile, linkedin });
+            candidates.push({ name, profile, linkedin: "" });
         }
     });
     return candidates;
@@ -735,8 +733,7 @@ async function checkIfSharedEvaluation() {
                 div.innerHTML = `
                     <div class="candidate-row">
                         <input type="text" class="candidate-name" value="${escapeHtml(c.name)}" disabled>
-                        <input type="text" class="candidate-profile" value="${escapeHtml(c.profile)}" disabled>
-                        <input type="text" class="candidate-linkedin" value="${escapeHtml(c.linkedin)}" disabled>
+                        <textarea class="candidate-profile" disabled>${escapeHtml(c.profile)}</textarea>
                     </div>
                 `;
                 candidatesListEl.appendChild(div);
