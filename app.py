@@ -134,47 +134,46 @@ def get_evaluation(eval_id: str):
 def evaluate_with_gemini(job_description: str, candidate: Candidate) -> dict:
     """Use Gemini API to evaluate a candidate against job description AND Mambu Career Framework"""
 
-    mambu_context = get_mambu_framework_prompt()
-
     prompt = f"""
-You are an expert talent acquisition specialist at Mambu. Evaluate this candidate against the job description AND the Mambu Career Framework.
+You are an expert talent acquisition specialist at Mambu. Evaluate this candidate.
 
-{mambu_context}
+MAMBU LEVELS REFERENCE:
+Level 8-7: Entry/Associate
+Level 6: Intermediate
+Level 5: Experienced (expert-level, independent problem-solving)
+Level 4: Senior (mastery, drives decisions, mentors)
+Level 3: Advanced Senior (domain expert, technical strategy)
+Level 2: Director/VP (strategic leadership)
+Levels 1-0: Executive (LT, CEO)
 
-JOB DESCRIPTION:
-{job_description}
+Career Paths: IC (Individual Contributor - technical) or TL (Team Leader - management)
 
-CANDIDATE:
-Name: {candidate.name}
+JOB DESCRIPTION: {job_description}
+
+CANDIDATE: {candidate.name}
 Profile: {candidate.profile}
-LinkedIn: {candidate.linkedin if candidate.linkedin else "Not provided"}
 
-EVALUATION TASK:
-1. Assess general fit against job description
-2. Determine best fit Mambu Level (0-8) for this candidate
-3. Assess if candidate is better suited for Individual Contributor (IC) or Team Leader (TL) path
-4. Estimate growth potential (can they reach next level? in how long?)
+Evaluate in JSON with ONLY these fields (no extra fields):
+{{"match_score": 0-100, "technical_fit": "one sentence", "strengths": ["s1", "s2", "s3"], "red_flags": ["r1", "r2"], "questions": ["q1", "q2", "q3"], "recommendation": "STRONG YES/YES/MAYBE/NO", "reasoning": "2 sentences", "mambu_level_fit": 0-8, "mambu_career_path": "IC or TL", "growth_potential": "timeline or assessment"}}
 
-Provide a comprehensive evaluation in JSON format with these exact fields:
-- match_score (0-100, percentage against job requirements)
-- technical_fit (one sentence summary of technical match)
-- strengths (list of 3-4 key strengths)
-- red_flags (list of 2-3 concerns or gaps, or empty list if none)
-- questions (list of 3 clarifying interview questions)
-- recommendation (STRONG YES, YES, MAYBE, or NO)
-- reasoning (2-3 sentences explaining the recommendation)
-- mambu_level_fit (0-8, best fit Mambu level, use 4=Senior as default if unclear)
-- mambu_career_path (IC or TL - which path fits better?)
-- growth_potential (e.g., "Can reach Level 5 in 12-18 months" or "Currently at max level")
-
-Return ONLY valid JSON, no additional text.
+Return ONLY JSON, no text before or after.
 """
 
     model = genai.GenerativeModel("gemini-3.6-flash")
     response = model.generate_content(prompt)
 
     try:
-        result = json.loads(response.text)
+        # Clean response text
+        response_text = response.text.strip()
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.startswith("```"):
+            response_text = response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+        response_text = response_text.strip()
+
+        result = json.loads(response_text)
         result["candidate_name"] = candidate.name
 
         # Ensure Mambu fields have defaults
@@ -186,7 +185,7 @@ Return ONLY valid JSON, no additional text.
             result["growth_potential"] = "Not assessed"
 
         # Add Mambu level description
-        level = result.get("mambu_level_fit", 4)
+        level = int(result.get("mambu_level_fit", 4))
         career_path = result.get("mambu_career_path", "IC")
         if level in MAMBU_LEVELS:
             if career_path == "TL":
@@ -195,8 +194,8 @@ Return ONLY valid JSON, no additional text.
                 result["mambu_level_description"] = MAMBU_LEVELS[level]["ic_description"]
 
         return result
-    except json.JSONDecodeError:
-        raise ValueError(f"Failed to parse Gemini response for {candidate.name}")
+    except (json.JSONDecodeError, ValueError) as e:
+        raise ValueError(f"Failed to parse Gemini response for {candidate.name}: {str(e)}")
 
 @app.get("/")
 async def serve_frontend():
